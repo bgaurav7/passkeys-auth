@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 let users = {};
 let challenges = {};
 const rpId = '033d-49-36-105-218.ngrok-free.app';
-const expectedOrigin = ['http://localhost:3300', 'https://033d-49-36-105-218.ngrok-free.app'];
+const expectedOrigin = ['http://localhost:3300', 'https://033d-49-36-105-218.ngrok-free.app', 'android:apk-key-hash:TyBHH9maupZHjVknwsim6o7SjRTAtqI5mZ-jTUc9-hE'];
 
 app.listen(process.env.PORT || 3300, err => {
     if (err) throw err;
@@ -33,7 +33,7 @@ app.post('/register/start', (req, res) => {
     let challenge = getNewChallenge();
     challenges[username] = convertChallenge(challenge);
     const pubKey = {
-        challenge: challenge,
+        challenge: challenges[username],
         rp: {id: rpId, name: 'webauthn-app'},
         user: {id: username, name: username, displayName: username},
         pubKeyCredParams: [
@@ -84,10 +84,14 @@ app.post('/register/finish', async (req, res) => {
 
     if (verified) {
         users[username] = registrationInfo;
-        return res.status(200).send(true);
+        return res.status(200).json({
+            "status": true
+        });
     }
 
-    res.status(500).send(false);
+    res.status(500).json({
+        "status": false
+    });
 });
 
 app.post('/login/start', (req, res) => {
