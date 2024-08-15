@@ -66,9 +66,7 @@ class SignUpFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSignUpBinding.inflate(inflater, container, false)
         return binding.root
@@ -120,8 +118,7 @@ class SignUpFragment : Fragment() {
 
     private suspend fun createPassword() {
         val request = CreatePasswordRequest(
-            binding.username.text.toString(),
-            binding.password.text.toString()
+            binding.username.text.toString(), binding.password.text.toString()
         )
         try {
             credentialManager.createCredential(requireActivity(), request) as CreatePasswordResponse
@@ -146,7 +143,9 @@ class SignUpFragment : Fragment() {
                 val call = APIClient.apiService.registerStart(AuthModel(username, ""))
 
                 call.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                    override fun onResponse(
+                        call: Call<JsonObject>, response: Response<JsonObject>
+                    ) {
                         val registerReq = response.body().toString()
                         Log.i(TAG, "Register Req: $registerReq")
 
@@ -178,8 +177,7 @@ class SignUpFragment : Fragment() {
         var response: CreatePublicKeyCredentialResponse? = null
         try {
             response = credentialManager.createCredential(
-                requireActivity(),
-                request
+                requireActivity(), request
             ) as CreatePublicKeyCredentialResponse
         } catch (e: CreateCredentialException) {
             configureProgress(View.INVISIBLE)
@@ -244,8 +242,10 @@ class SignUpFragment : Fragment() {
                 "An unknown error occurred."
             }
         }
-        Log.e(TAG, "createPasskey failed with exception: " + e.message.toString() + " Type: " + e.type)
-        if(e is CreatePublicKeyCredentialDomException) Log.e(TAG, "Dom Error: " + e.domError)
+        Log.e(
+            TAG, "createPasskey failed with exception: " + e.message.toString() + " Type: " + e.type
+        )
+        if (e is CreatePublicKeyCredentialDomException) Log.e(TAG, "Dom Error: " + e.domError)
         activity?.showErrorAlert(msg)
     }
 
@@ -256,12 +256,11 @@ class SignUpFragment : Fragment() {
 
         callEnd.enqueue(object : Callback<JsonObject> {
             override fun onResponse(
-                call: Call<JsonObject>,
-                response: Response<JsonObject>
+                call: Call<JsonObject>, response: Response<JsonObject>
             ) {
                 Log.i(TAG, "registerResponse: " + response.code() + " " + response.message())
 
-                if(response.code() == 200) {
+                if (response.code() == 200) {
                     DataProvider.setSignedInThroughPasskeys(true)
                     listener.showHome()
                 } else {
@@ -272,7 +271,8 @@ class SignUpFragment : Fragment() {
 
             override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                 Log.e(TAG, "Error : " + t.message)
-                val message = "Unable to connect to server for final registration. Error: " + t.message
+                val message =
+                    "Unable to connect to server for final registration. Error: " + t.message
                 activity?.showErrorAlert(message)
             }
         })

@@ -62,9 +62,7 @@ class SignInFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSignInBinding.inflate(inflater, container, false)
         return binding.root
@@ -81,13 +79,11 @@ class SignInFragment : Fragment() {
     }
 
     private fun configureGetCredentialRequest(responseJson: String): GetCredentialRequest {
-        val getPublicKeyCredentialOption =
-            GetPublicKeyCredentialOption(responseJson, null)
+        val getPublicKeyCredentialOption = GetPublicKeyCredentialOption(responseJson, null)
         val getPasswordOption = GetPasswordOption()
         val getCredentialRequest = GetCredentialRequest(
             listOf(
-                getPublicKeyCredentialOption,
-                getPasswordOption
+                getPublicKeyCredentialOption, getPasswordOption
             )
         )
         return getCredentialRequest
@@ -104,7 +100,9 @@ class SignInFragment : Fragment() {
                 val call = APIClient.apiService.loginStart(AuthModel(username, ""))
 
                 call.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                    override fun onResponse(
+                        call: Call<JsonObject>, response: Response<JsonObject>
+                    ) {
                         val loginReq = response.body().toString()
                         Log.i(TAG, "Login Req: $loginReq")
 
@@ -127,7 +125,10 @@ class SignInFragment : Fragment() {
                                 if (data.credential is PasswordCredential) {
                                     val cred = data.credential as PasswordCredential
                                     DataProvider.setSignedInThroughPasskeys(false)
-                                    Log.d(TAG,"Got Password - User:${cred.id} Password: ${cred.password}")
+                                    Log.d(
+                                        TAG,
+                                        "Got Password - User:${cred.id} Password: ${cred.password}"
+                                    )
 
                                     showHomeWithPassword(cred.id, cred.password)
                                 }
@@ -158,12 +159,14 @@ class SignInFragment : Fragment() {
 
         callEnd.enqueue(object : Callback<JsonObject> {
             override fun onResponse(
-                call: Call<JsonObject>,
-                response: Response<JsonObject>
+                call: Call<JsonObject>, response: Response<JsonObject>
             ) {
-                Log.i(TAG, "Login Authentication Finish: " + response.code() + " " + response.message())
+                Log.i(
+                    TAG,
+                    "Login Authentication Finish: " + response.code() + " " + response.message()
+                )
 
-                if(response.code() == 200) {
+                if (response.code() == 200) {
                     DataProvider.setSignedInThroughPasskeys(true)
                     listener.showHome()
                 } else {
