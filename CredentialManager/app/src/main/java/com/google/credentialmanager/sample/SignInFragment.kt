@@ -195,16 +195,7 @@ class SignInFragment : Fragment() {
         binding.circularProgressIndicator.visibility = visibility
     }
 
-//    private fun fetchAuthJsonFromServer(): String {
-//        return requireContext().readFromAsset("AuthFromServer")
-//    }
-
-//    private fun sendSignInResponseToServer(): Boolean {
-//        return true
-//    }
-
     private suspend fun getSavedCredentials(getCredentialRequest: GetCredentialRequest): GetCredentialResponse? {
-
         val result = try {
             credentialManager.getCredential(
                 requireActivity(),
