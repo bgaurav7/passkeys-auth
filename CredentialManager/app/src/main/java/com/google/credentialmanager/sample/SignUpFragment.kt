@@ -17,12 +17,9 @@
 package com.google.credentialmanager.sample
 
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.Trace
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -43,14 +40,13 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.credentialmanager.sample.databinding.FragmentSignUpBinding
 import com.google.credentialmanager.sample.network.APIClient
-import com.google.credentialmanager.sample.network.AuthRegister
+import com.google.credentialmanager.sample.network.AuthModel
 import com.google.credentialmanager.sample.utils.Signature
 import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.security.MessageDigest
 
 
 class SignUpFragment : Fragment() {
@@ -147,7 +143,7 @@ class SignUpFragment : Fragment() {
 
                 val username = binding.username.text.toString();
                 Log.i(TAG, "Username: $username")
-                val call = APIClient.apiService.registerStart(AuthRegister(username, ""))
+                val call = APIClient.apiService.registerStart(AuthModel(username, ""))
 
                 call.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
@@ -254,7 +250,7 @@ class SignUpFragment : Fragment() {
     }
 
     private fun registerResponse(username: String, data: String) {
-        val callEnd = APIClient.apiService.registerFinish(AuthRegister(username, data))
+        val callEnd = APIClient.apiService.registerFinish(AuthModel(username, data))
 
         Log.i(TAG, "registerResponse: Req $data")
 

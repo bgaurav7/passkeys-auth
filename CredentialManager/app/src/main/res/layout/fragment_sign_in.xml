@@ -79,6 +79,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:hint="@string/autofill_saved_credentials"
+        android:text="bansal"
         app:layout_constraintBottom_toTopOf="@+id/sign_in_with_savedCredentials"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

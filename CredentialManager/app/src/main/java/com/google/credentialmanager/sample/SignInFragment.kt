@@ -25,6 +25,7 @@ import android.view.ViewGroup
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.GetCredentialResponse
 import androidx.credentials.GetPasswordOption
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.PasswordCredential
@@ -35,10 +36,17 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.credentialmanager.sample.databinding.FragmentSignInBinding
 import com.google.credentialmanager.sample.network.APIClient
+import com.google.credentialmanager.sample.network.AuthModel
+import com.google.credentialmanager.sample.utils.Signature
+import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class SignInFragment : Fragment() {
 
+    private val TAG = "SignIn"
     private lateinit var credentialManager: CredentialManager
     private var _binding: FragmentSignInBinding? = null
     private val binding get() = _binding!!
@@ -67,35 +75,14 @@ class SignInFragment : Fragment() {
 
         credentialManager = CredentialManager.create(requireActivity())
 
-        val getCredentialRequest = configureGetCredentialRequest()
-
-        configureAutofill(getCredentialRequest)
-
         binding.signInWithSavedCredentials.setOnClickListener(
-            signInWithSavedCredentials(
-                getCredentialRequest
-            )
+            signInWithSavedCredentials()
         )
     }
 
-    private fun configureAutofill(getCredentialRequest: GetCredentialRequest) {
-        binding.textUsername
-            .pendingGetCredentialRequest = PendingGetCredentialRequest(
-            getCredentialRequest
-        ) { response ->
-            if (response.credential is PublicKeyCredential) {
-                DataProvider.setSignedInThroughPasskeys(true)
-            }
-            if (response.credential is PasswordCredential) {
-                DataProvider.setSignedInThroughPasskeys(false)
-            }
-            showHome()
-        }
-    }
-
-    private fun configureGetCredentialRequest(): GetCredentialRequest {
+    private fun configureGetCredentialRequest(responseJson: String): GetCredentialRequest {
         val getPublicKeyCredentialOption =
-            GetPublicKeyCredentialOption(fetchAuthJsonFromServer(), null)
+            GetPublicKeyCredentialOption(responseJson, null)
         val getPasswordOption = GetPasswordOption()
         val getCredentialRequest = GetCredentialRequest(
             listOf(
@@ -106,25 +93,95 @@ class SignInFragment : Fragment() {
         return getCredentialRequest
     }
 
-    private fun signInWithSavedCredentials(getCredentialRequest: GetCredentialRequest): View.OnClickListener {
+    private fun signInWithSavedCredentials(): View.OnClickListener {
         return View.OnClickListener {
+            if (binding.textUsername.text.isNullOrEmpty()) {
+                binding.textUsername.error = "User name required"
+                binding.textUsername.requestFocus()
+            } else {
+                val username = binding.textUsername.text.toString();
+                Log.i(TAG, "Username: $username")
+                val call = APIClient.apiService.loginStart(AuthModel(username, ""))
 
-            lifecycleScope.launch {
-                configureViews(View.VISIBLE, false)
+                call.enqueue(object : Callback<JsonObject> {
+                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                        val loginReq = response.body().toString()
+                        Log.i(TAG, "Login Req: $loginReq")
 
-                val data = getSavedCredentials(getCredentialRequest)
+                        lifecycleScope.launch {
+                            configureViews(View.VISIBLE, false)
 
-                configureViews(View.INVISIBLE, true)
+                            val getCredentialRequest = configureGetCredentialRequest(loginReq)
 
-                data?.let {
-                    showHome()
-                }
+                            val data = getSavedCredentials(getCredentialRequest)
+
+                            data?.let {
+                                if (data.credential is PublicKeyCredential) {
+                                    val cred = data.credential as PublicKeyCredential
+                                    DataProvider.setSignedInThroughPasskeys(true)
+
+                                    Log.d(TAG, "Passkey: ${cred.authenticationResponseJson}")
+
+                                    showHomeWithPasskeys(username, cred.authenticationResponseJson)
+                                }
+                                if (data.credential is PasswordCredential) {
+                                    val cred = data.credential as PasswordCredential
+                                    DataProvider.setSignedInThroughPasskeys(false)
+                                    Log.d(TAG,"Got Password - User:${cred.id} Password: ${cred.password}")
+
+                                    showHomeWithPassword(cred.id, cred.password)
+                                }
+                                if (data.credential is CustomCredential) {
+                                    //If you are also using any external sign-in libraries, parse them here with the
+                                    // utility functions provided.
+                                }
+
+                                configureViews(View.INVISIBLE, true)
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                        Log.e(TAG, "Error : " + t.message)
+                        val message = "Unable to connect to server. Error: " + t.message
+                        activity?.showErrorAlert(message)
+                    }
+                })
             }
         }
     }
 
-    private fun showHome() {
-        sendSignInResponseToServer()
+    private fun showHomeWithPasskeys(username: String, data: String) {
+        val callEnd = APIClient.apiService.loginFinish(AuthModel(username, data))
+
+        Log.i(TAG, "Login Authentication Finish: Req $data")
+
+        callEnd.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(
+                call: Call<JsonObject>,
+                response: Response<JsonObject>
+            ) {
+                Log.i(TAG, "Login Authentication Finish: " + response.code() + " " + response.message())
+
+                if(response.code() == 200) {
+                    DataProvider.setSignedInThroughPasskeys(true)
+                    listener.showHome()
+                } else {
+                    val message = "Unable to login using credentials"
+                    activity?.showErrorAlert(message)
+                }
+            }
+
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                Log.e(TAG, "Error : " + t.message)
+                val message = "Unable to connect to server for authentication. Error: " + t.message
+                activity?.showErrorAlert(message)
+            }
+        })
+    }
+
+    private fun showHomeWithPassword(username: String, password: String) {
+        DataProvider.setSignedInThroughPasskeys(false)
         listener.showHome()
     }
 
@@ -138,15 +195,15 @@ class SignInFragment : Fragment() {
         binding.circularProgressIndicator.visibility = visibility
     }
 
-    private fun fetchAuthJsonFromServer(): String {
-        return requireContext().readFromAsset("AuthFromServer")
-    }
+//    private fun fetchAuthJsonFromServer(): String {
+//        return requireContext().readFromAsset("AuthFromServer")
+//    }
 
-    private fun sendSignInResponseToServer(): Boolean {
-        return true
-    }
+//    private fun sendSignInResponseToServer(): Boolean {
+//        return true
+//    }
 
-    private suspend fun getSavedCredentials(getCredentialRequest: GetCredentialRequest): String? {
+    private suspend fun getSavedCredentials(getCredentialRequest: GetCredentialRequest): GetCredentialResponse? {
 
         val result = try {
             credentialManager.getCredential(
@@ -154,29 +211,15 @@ class SignInFragment : Fragment() {
                 getCredentialRequest,
             )
         } catch (e: Exception) {
-            configureViews(View.INVISIBLE, true)
-            Log.e("Auth", "getCredential failed with exception: " + e.message.toString())
+//            configureViews(View.INVISIBLE, true)
+            Log.e(TAG, "getCredential failed with exception: " + e.message.toString())
             activity?.showErrorAlert(
                 "An error occurred while authenticating through saved credentials. Check logs for additional details"
             )
             return null
         }
 
-        if (result.credential is PublicKeyCredential) {
-            val cred = result.credential as PublicKeyCredential
-            DataProvider.setSignedInThroughPasskeys(true)
-            return "Passkey: ${cred.authenticationResponseJson}"
-        }
-        if (result.credential is PasswordCredential) {
-            val cred = result.credential as PasswordCredential
-            DataProvider.setSignedInThroughPasskeys(false)
-            return "Got Password - User:${cred.id} Password: ${cred.password}"
-        }
-        if (result.credential is CustomCredential) {
-            //If you are also using any external sign-in libraries, parse them here with the
-            // utility functions provided.
-        }
-        return null
+        return result
     }
 
     override fun onDestroyView() {

@@ -14,8 +14,8 @@ app.use(bodyParser.json());
 
 let users = {};
 let challenges = {};
-const rpId = '033d-49-36-105-218.ngrok-free.app';
-const expectedOrigin = ['http://localhost:3300', 'https://033d-49-36-105-218.ngrok-free.app', 'android:apk-key-hash:TyBHH9maupZHjVknwsim6o7SjRTAtqI5mZ-jTUc9-hE'];
+const rpId = 'rapid-charming-vulture.ngrok-free.app';
+const expectedOrigin = ['http://localhost:3300', 'https://rapid-charming-vulture.ngrok-free.app', 'android:apk-key-hash:TyBHH9maupZHjVknwsim6o7SjRTAtqI5mZ-jTUc9-hE'];
 
 app.listen(process.env.PORT || 3300, err => {
     if (err) throw err;
@@ -84,23 +84,30 @@ app.post('/register/finish', async (req, res) => {
 
     if (verified) {
         users[username] = registrationInfo;
-        return res.status(200).json({
+        return res.status(200).send({
             "status": true
         });
     }
 
-    res.status(500).json({
+    res.status(500).send({
         "status": false
     });
 });
 
 app.post('/login/start', (req, res) => {
     let username = req.body.username;
+    console.log("Login Start: username=", username);
+    
     if (!users[username]) {
         return res.status(404).send(false);
     }
+    
     let challenge = getNewChallenge();
-    challenges[username] = convertChallenge(challenge);
+    challenge = convertChallenge(challenge);
+    challenges[username] = challenge;
+    
+    console.log("Login Start: challenge=", challenge);
+
     res.json({
         challenge,
         rpId,
@@ -115,15 +122,21 @@ app.post('/login/start', (req, res) => {
 
 app.post('/login/finish', async (req, res) => {
     let username = req.body.username;
+    console.log("Login Finish: username=", username);
     if (!users[username]) {
        return res.status(404).send(false);
     }
+
+    console.log("Login Finish: challenge=", challenges[username]);
+    console.log("Login Finish: response=", req.body.data);
+    let responseData = JSON.parse(req.body.data);
+
     let verification;
     try {
         const user = users[username];
         verification = await SimpleWebAuthnServer.verifyAuthenticationResponse({
             expectedChallenge: challenges[username],
-            response: req.body.data,
+            response: responseData,
             authenticator: user,
             expectedRPID: rpId,
             expectedOrigin,

@@ -4,15 +4,17 @@ import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.POST
-import retrofit2.http.Query
 
 interface APIService {
     @POST("register/start")
-    fun registerStart(@Body authRegister: AuthRegister): Call<JsonObject>
+    fun registerStart(@Body authModel: AuthModel): Call<JsonObject>
 
     @POST("register/finish")
-    fun registerFinish(@Body authRegister: AuthRegister): Call<JsonObject>
+    fun registerFinish(@Body authModel: AuthModel): Call<JsonObject>
 
     @POST("login/start")
-    fun loginStart(): Call<JsonObject>
+    fun loginStart(@Body authModel: AuthModel): Call<JsonObject>
+
+    @POST("login/finish")
+    fun loginFinish(@Body authModel: AuthModel): Call<JsonObject>
 }
