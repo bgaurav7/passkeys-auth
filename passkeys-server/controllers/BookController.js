@@ -1,6 +1,5 @@
 const Book = require("../models/BookModel");
 const { body,validationResult } = require("express-validator");
-const { sanitizeBody } = require("express-validator");
 const apiResponse = require("../helpers/apiResponse");
 const auth = require("../middlewares/jwt");
 var mongoose = require("mongoose");
@@ -78,16 +77,15 @@ exports.bookDetail = [
  */
 exports.bookStore = [
 	auth,
-	body("title", "Title must not be empty.").isLength({ min: 1 }).trim(),
-	body("description", "Description must not be empty.").isLength({ min: 1 }).trim(),
+	body("title", "Title must not be empty.").isLength({ min: 1 }).trim().escape(),
+	body("description", "Description must not be empty.").isLength({ min: 1 }).trim().escape(),
 	body("isbn", "ISBN must not be empty").isLength({ min: 1 }).trim().custom((value,{req}) => {
 		return Book.findOne({isbn : value,user: req.user._id}).then(book => {
 			if (book) {
 				return Promise.reject("Book already exist with this ISBN no.");
 			}
 		});
-	}),
-	sanitizeBody("*").escape(),
+	}).escape(),
 	(req, res) => {
 		try {
 			const errors = validationResult(req);
@@ -127,16 +125,15 @@ exports.bookStore = [
  */
 exports.bookUpdate = [
 	auth,
-	body("title", "Title must not be empty.").isLength({ min: 1 }).trim(),
-	body("description", "Description must not be empty.").isLength({ min: 1 }).trim(),
+	body("title", "Title must not be empty.").isLength({ min: 1 }).trim().escape(),
+	body("description", "Description must not be empty.").isLength({ min: 1 }).trim().escape(),
 	body("isbn", "ISBN must not be empty").isLength({ min: 1 }).trim().custom((value,{req}) => {
 		return Book.findOne({isbn : value,user: req.user._id, _id: { "$ne": req.params.id }}).then(book => {
 			if (book) {
 				return Promise.reject("Book already exist with this ISBN no.");
 			}
 		});
-	}),
-	sanitizeBody("*").escape(),
+	}).escape(),
 	(req, res) => {
 		try {
 			const errors = validationResult(req);

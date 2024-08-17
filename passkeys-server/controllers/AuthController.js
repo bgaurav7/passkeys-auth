@@ -1,6 +1,5 @@
 const UserModel = require("../models/UserModel");
 const { body,validationResult } = require("express-validator");
-const { sanitizeBody } = require("express-validator");
 //helper file to prepare responses.
 const apiResponse = require("../helpers/apiResponse");
 const utility = require("../helpers/utility");
@@ -22,9 +21,9 @@ const { constants } = require("../helpers/constants");
 exports.register = [
 	// Validate fields.
 	body("firstName").isLength({ min: 1 }).trim().withMessage("First name must be specified.")
-		.isAlphanumeric().withMessage("First name has non-alphanumeric characters."),
+		.isAlphanumeric().withMessage("First name has non-alphanumeric characters.").escape(),
 	body("lastName").isLength({ min: 1 }).trim().withMessage("Last name must be specified.")
-		.isAlphanumeric().withMessage("Last name has non-alphanumeric characters."),
+		.isAlphanumeric().withMessage("Last name has non-alphanumeric characters.").escape(),
 	body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
 		.isEmail().withMessage("Email must be a valid email address.").custom((value) => {
 			return UserModel.findOne({email : value}).then((user) => {
@@ -32,13 +31,8 @@ exports.register = [
 					return Promise.reject("E-mail already in use");
 				}
 			});
-		}),
-	body("password").isLength({ min: 6 }).trim().withMessage("Password must be 6 characters or greater."),
-	// Sanitize fields.
-	sanitizeBody("firstName").escape(),
-	sanitizeBody("lastName").escape(),
-	sanitizeBody("email").escape(),
-	sanitizeBody("password").escape(),
+		}).escape(),
+	body("password").isLength({ min: 6 }).trim().withMessage("Password must be 6 characters or greater.").escape(),
 	// Process request after validation and sanitization.
 	(req, res) => {
 		try {
@@ -104,10 +98,8 @@ exports.register = [
  */
 exports.login = [
 	body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
-		.isEmail().withMessage("Email must be a valid email address."),
-	body("password").isLength({ min: 1 }).trim().withMessage("Password must be specified."),
-	sanitizeBody("email").escape(),
-	sanitizeBody("password").escape(),
+		.isEmail().withMessage("Email must be a valid email address.").escape(),
+	body("password").isLength({ min: 1 }).trim().withMessage("Password must be specified.").escape(),
 	(req, res) => {
 		try {
 			const errors = validationResult(req);
@@ -168,10 +160,8 @@ exports.login = [
  */
 exports.verifyConfirm = [
 	body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
-		.isEmail().withMessage("Email must be a valid email address."),
-	body("otp").isLength({ min: 1 }).trim().withMessage("OTP must be specified."),
-	sanitizeBody("email").escape(),
-	sanitizeBody("otp").escape(),
+		.isEmail().withMessage("Email must be a valid email address.").escape(),
+	body("otp").isLength({ min: 1 }).trim().withMessage("OTP must be specified.").escape(),
 	(req, res) => {
 		try {
 			const errors = validationResult(req);
@@ -218,8 +208,7 @@ exports.verifyConfirm = [
  */
 exports.resendConfirmOtp = [
 	body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
-		.isEmail().withMessage("Email must be a valid email address."),
-	sanitizeBody("email").escape(),
+		.isEmail().withMessage("Email must be a valid email address.").escape(),
 	(req, res) => {
 		try {
 			const errors = validationResult(req);

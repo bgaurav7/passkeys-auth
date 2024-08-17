@@ -11,7 +11,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "codacy-coverage": "^3.4.0",
-    "cookie-parser": "~1.4.3",
+    "cookie-parser": "~1.4.6",
     "cors": "^2.8.5",
     "debug": "~2.6.9",
     "dotenv": "^8.2.0",
@@ -30,7 +30,7 @@
     "chai-http": "^4.3.0",
     "eslint": "^6.5.1",
     "mocha": "^6.2.2",
-    "nodemon": "^1.19.4",
+    "nodemon": "^3.1.4",
     "nyc": "^14.1.1"
   }
 }
